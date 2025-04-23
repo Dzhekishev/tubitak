@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akıllı Otopark</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        input {
+            width: 80%;
+            padding: 10px;
+            margin-top: 20px;
+            border: 2px solid blue;
+            text-align: center;
+            font-size: 18px;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+            width: 80%;
+            text-align: center;
+        }
+        li {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Akıllı Otopark uygulamasına hoş geldiniz</h2>
+
+    <input type="text" id="searchInput" placeholder="Adres yaz..." oninput="searchAddress()">
+
+    <p>Adresin yanında park yeri bulunuz</p>
+
+    <ul id="results"></ul>
+
+    <script>
+        function searchAddress() {
+            let query = document.getElementById("searchInput").value;
+            if (query.length > 1) {
+                fetch(`/search/?query=${query}`)
+                .then(response => response.json())
+                .then(data => {
+                    let resultsList = document.getElementById("results");
+                    resultsList.innerHTML = "";
+                    data.results.forEach(camera => {
+                        let li = document.createElement("li");
+                        li.innerText = camera.title;
+                        resultsList.appendChild(li);
+                    });
+                });
+            }
+        }
+    </script>
+
+</body>
+</html>
