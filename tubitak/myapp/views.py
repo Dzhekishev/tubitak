@@ -1,138 +1,146 @@
-from django.shortcuts import render, get_object_or_404, redirect
+from myapp.models import Camera, Page
+from myapp.serializers import*
 from rest_framework import generics
-from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.response import Response
-from .models import *
-from django.contrib import messages
-from .serializers import *
-from django.db.models.functions import Lower
-from rest_framework.response import *
-from django.http import Http404, JsonResponse
-from rest_framework.decorators import api_view
 from rest_framework import filters
 import django_filters
-from rest_framework import permissions
-from django.db.models import Q
-from django.core.exceptions import ValidationError
-from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render
+from django.template.loader import render_to_string
+from django.http import JsonResponse
+from django.shortcuts import redirect, get_object_or_404
+from django.contrib import messages
+from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required  # Если нужно ограничить для авторизованных
+from django.shortcuts import render, redirect
+from .models import Page
+import csv
+from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
 
 
-class CameraView(generics.ListCreateAPIView):
-    queryset = Camera.objects.all()
-    serializer_class = Camera_Serializers
+class Camera_View(generics.ListCreateAPIView):
+    queryset= Camera.objects.all()
+    serializer_class=Camera_Serializers
+
     filter_backends = [django_filters.rest_framework.DjangoFilterBackend]
     filterset_fields = ['id', 'title']
+class Page_View(generics.ListCreateAPIView):
+    queryset=Page.objects.all()
+    serializer_class=Page_Serializers
+
+    filter_backends = [django_filters.rest_framework.DjangoFilterBackend]
+    filterset_fields = ['id', 'camera']
+
+def index(request):
+    cameras = Camera.objects.all()
+    pages = Page.objects.all()
+    return render(request, 'index.html', {'cameras': cameras, 'pages': pages})
 
 
-def camera_list_view(request):
-    search_query = request.GET.get('title', '')
-    cameras = Camera.objects.filter(Q(title__icontains=search_query)) if search_query else Camera.objects.all()
-    return render(request, 'myapp/page_detail.html', {'cameras': cameras})
+def camera_list(request):
+    cameras = Camera.objects.all()
+    return render(request, 'camera_list.html', {'cameras': cameras})
+
+def page_list(request):
+    pages = Page.objects.all()
+    return render(request, 'page_list.html', {'pages': pages})
 
 
-def search_camera(request):
-    query = request.GET.get('query', '').strip()
+def page_list(request):
+    query = request.GET.get('q')
+    pages = Page.objects.all()
+
     if query:
-        cameras = Camera.objects.annotate(lower_title=Lower('title')) \
-            .filter(lower_title__icontains=query.lower())
-        results = []
-        for camera in cameras:
-            pages = camera.page_set.all()
-            for page in pages:
-                results.append({
-                    'camera_id': camera.id,
-                    'camera_title': camera.title,
-                    'page_id': page.id,
-                    'free': page.free,
-                    'full': page.full,
-                    'rezervation': page.rezervation
-                })
-    else:
-        results = []
-    return JsonResponse({'results': results})
+        pages = pages.filter(camera__title__icontains=query).distinct()
 
+    # Разделяем на с местами и без
+    pages_with_space = pages.filter(free__gt=0)
+    pages_full = pages.filter(free=0)
 
-def search_page(request):
-    return render(request, 'myapp/search.html')
-
-
-class PageView(generics.ListCreateAPIView):
-    queryset = Page.objects.all()
-    serializer_class = Page_Serializers
-
-
-def page_detail(request, page_id):
-    page = get_object_or_404(Page, id=page_id)
-    cameras = page.camera.all()
-
-    # Добавляем сообщения в контекст
-    message = None
-    if 'booking_message' in request.session:
-        message = request.session.pop('booking_message')
-
-    return render(request, 'page_detail.html', {
-        'page': page,
-        'cameras': cameras,
-        'message': message
+    return render(request, 'page_list.html', {
+        'pages_with_space': pages_with_space,
+        'pages_full': pages_full,
+        'query': query
     })
 
-
-def get_camera_data(request, camera_id):
-    camera = get_object_or_404(Camera, id=camera_id)
-    pages = camera.page_set.all()
-
-    if pages.exists():
-        page = pages.first()
-        return JsonResponse({
-            'free': page.free,
-            'full': page.full,
-            'rezervation': page.rezervation
-        })
-    return JsonResponse({'error': 'Нет связанных страниц для этой камеры'}, status=404)
-
-
-@csrf_exempt
-@require_POST  # Гарантируем, что это POST-запрос
-def reserve_parking(request, page_id):
+def reserve_camera(request, page_id, camera_id):
     page = get_object_or_404(Page, id=page_id)
+    if page.free > 0:
+        page.rezervation += 1
+        page.free -= 1
+        page.save()
+        messages.success(request, "Успешно забронировано!")
+    else:
+        messages.warning(request, "Нет свободных мест.")
+    return redirect('page_list')
+
+
+
+
+@require_POST
+def ajax_reserve_camera(request):
+    page_id = request.POST.get('page_id')
+    camera_id = request.POST.get('camera_id')
 
     try:
-        # Проверяем, есть ли свободные места
-        if page.free <= 0:
-            raise ValidationError('Нет свободных мест для бронирования')
-
-        # Обновляем данные
-        page.free -= 1
-        page.rezervation += 1
-        page.save()
-
-        # Для AJAX-запросов возвращаем JSON
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'status': 'success',
-                'free': page.free,
-                'reserved': page.rezervation,
-                'full': page.full
-            })
-
-        # Для обычных запросов используем сессию для сообщения
-        request.session['booking_message'] = 'Место успешно забронировано!'
-        return redirect('page_detail', page_id=page.id)
-
-    except ValidationError as e:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-
-        request.session['booking_message'] = str(e)
-        return redirect('page_detail', page_id=page.id)
+        page = Page.objects.get(id=page_id)
+        if page.free > 0:
+            page.free -= 1
+            page.rezervation += 1
+            page.save()
+            return JsonResponse({'success': True, 'free': page.free, 'rezervation': page.rezervation})
+        else:
+            return JsonResponse({'success': False, 'message': 'No free spots left'})
+    except Page.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Invalid request'})
 
 
-# Новая функция для обработки бронирования через форму
-@login_required  # Опционально, если нужно только для авторизованных
-def reserve_spot(request, page_id):
+
+
+
+
+@login_required
+def dashboard(request):
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Access denied. Admins only.")
+
+    pages = Page.objects.all()
+
+    # Фильтрация по названию камеры
+    query = request.GET.get('q')
+    if query:
+        pages = pages.filter(camera__title__icontains=query).distinct()
+
+    # Сортировка
+    sort = request.GET.get('sort')
+    if sort:
+        pages = pages.order_by(sort)
+
+    # Обработка обновления
     if request.method == 'POST':
-        return reserve_parking(request, page_id)
-    return redirect('page_detail', page_id=page_id)
+        page_id = request.POST.get('page_id')
+        page = Page.objects.get(id=page_id)
+        page.free = int(request.POST.get('free'))
+        page.full = int(request.POST.get('full'))
+        page.rezervation = int(request.POST.get('rezervation'))
+        page.save()
+        return redirect('dashboard')
+
+    return render(request, 'myapp/dashboard.html', {'pages': pages})
+
+
+def export_csv(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="parkings.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['ID', 'Free', 'Full', 'Reserved', 'Cameras'])
+
+    for page in Page.objects.all():
+        cameras = ', '.join([cam.title for cam in page.camera.all()])
+        writer.writerow([page.id, page.free, page.full, page.rezervation, cameras])
+
+    return response
+
+

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen">
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-4xl font-bold text-green-600 dark:text-green-400">🚀 Admin Dashboard</h1>
+            <a href="{% url 'logout' %}" class="px-4 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition">Logout</a>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-center">📊 Parking Load Overview</h2>
+            <canvas id="parkingChart" class="w-full" height="120"></canvas>
+        </div>
+
+        <!-- Search and Sort Form -->
+        <form method="get" class="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="🔍 Search by camera name..."
+                   class="w-full sm:w-1/2 px-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-400 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+            <select name="sort" onchange="this.form.submit()" class="px-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                <option value="">Sort by</option>
+                <option value="free" {% if request.GET.sort == 'free' %}selected{% endif %}>Free slots (ascending)</option>
+                <option value="-free" {% if request.GET.sort == '-free' %}selected{% endif %}>Free slots (descending)</option>
+                <option value="rezervation" {% if request.GET.sort == 'rezervation' %}selected{% endif %}>Reserved</option>
+            </select>
+            <a href="{% url 'export_csv' %}" class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition text-sm">⬇ Export CSV</a>
+        </form>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl">
+                <thead class="bg-gray-200 dark:bg-gray-700 text-left text-sm uppercase text-gray-700 dark:text-gray-300">
+                    <tr>
+                        <th class="px-6 py-4">#</th>
+                        <th class="px-6 py-4">Cameras</th>
+                        <th class="px-6 py-4">Free</th>
+                        <th class="px-6 py-4">Full</th>
+                        <th class="px-6 py-4">Reserved</th>
+                        <th class="px-6 py-4">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for page in pages %}
+                    <tr class="border-t border-gray-200 dark:border-gray-700">
+                        <form method="post">
+                            {% csrf_token %}
+                            <td class="px-6 py-4 font-medium">{{ forloop.counter }}</td>
+                            <td class="px-6 py-4">
+                                {% for cam in page.camera.all %}
+                                <span class="inline-block bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full mr-1 mb-1">{{ cam.title }}</span>
+                                {% endfor %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <input type="number" name="free" value="{{ page.free }}" class="w-20 p-1 rounded border dark:bg-gray-700">
+                            </td>
+                            <td class="px-6 py-4">
+                                <input type="number" name="full" value="{{ page.full }}" class="w-20 p-1 rounded border dark:bg-gray-700">
+                            </td>
+                            <td class="px-6 py-4">
+                                <input type="number" name="rezervation" value="{{ page.rezervation }}" class="w-24 p-1 rounded border dark:bg-gray-700">
+                            </td>
+                            <td class="px-6 py-4">
+                                <input type="hidden" name="page_id" value="{{ page.id }}">
+                                <button type="submit" class="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition">Update</button>
+                            </td>
+                        </form>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center py-4 text-gray-500">No parking pages found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-10 text-center">
+            <a href="/" class="text-sm text-gray-500 hover:underline">← Back to Home</a>
+        </div>
+    </div>
+
+    <!-- Chart.js Rendering -->
+    <script>
+        const ctx = document.getElementById('parkingChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [{% for page in pages %}'Parking {{ forloop.counter }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+                datasets: [
+                    {
+                        label: 'Free',
+                        data: [{% for page in pages %}{{ page.free }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                        backgroundColor: 'rgba(34, 197, 94, 0.8)'
+                    },
+                    {
+                        label: 'Full',
+                        data: [{% for page in pages %}{{ page.full }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                        backgroundColor: 'rgba(239, 68, 68, 0.8)'
+                    },
+                    {
+                        label: 'Reserved',
+                        data: [{% for page in pages %}{{ page.rezervation }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                        backgroundColor: 'rgba(234, 179, 8, 0.8)'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

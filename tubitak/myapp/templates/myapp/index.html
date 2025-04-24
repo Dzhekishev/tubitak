@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Parking System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans leading-relaxed tracking-wide flex flex-col">
+    <header class="bg-white shadow-md py-6 px-8">
+        <h1 class="text-3xl font-bold text-blue-600">📷 Smart Parking & Camera Dashboard</h1>
+        <p class="text-gray-500 mt-1">Real-time overview of your parking lot and camera uploads</p>
+    </header>
+
+    <main class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Camera Section -->
+        <section class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">🎥 Camera List</h2>
+            <ul class="space-y-4">
+                {% for camera in cameras %}
+                <li class="border-l-4 border-blue-500 pl-4">
+                    <p class="text-lg font-medium">{{ camera.title }}</p>
+                    <p class="text-sm text-gray-600">Uploaded: {{ camera.time }}</p>
+                    <a href="{{ camera.video.url }}" class="text-blue-600 hover:underline">Watch Video</a>
+                </li>
+                {% empty %}
+                <li class="text-gray-500">No cameras found.</li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <!-- Page Section -->
+        <section class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">🚗 Parking Pages</h2>
+            <ul class="space-y-4">
+                {% for page in pages %}
+                <li class="border-l-4 border-green-500 pl-4">
+                    <p><strong>Cameras:</strong>
+                        {% for cam in page.camera.all %}
+                            <span class="inline-block bg-blue-100 text-blue-700 text-sm px-2 py-1 rounded-full mr-1">{{ cam.title }}</span>
+                        {% endfor %}
+                    </p>
+                    <p class="mt-1">
+                        <span class="text-green-600 font-semibold">Free:</span> {{ page.free }},
+                        <span class="text-red-600 font-semibold">Full:</span> {{ page.full }},
+                        <span class="text-yellow-600 font-semibold">Reserved:</span> {{ page.rezervation }}
+                    </p>
+                </li>
+                {% empty %}
+                <li class="text-gray-500">No parking pages found.</li>
+                {% endfor %}
+            </ul>
+        </section>
+    </main>
+
+    <footer class="bg-white text-center py-4 mt-auto text-sm text-gray-400">
+        &copy; 2025 SmartParking Inc. All rights reserved.
+    </footer>
+</body>
+</html>

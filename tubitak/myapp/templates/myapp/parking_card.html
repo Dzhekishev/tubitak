@@ -1,0 +1,24 @@
+<div class="bg-white dark:bg-gray-800 shadow-xl rounded-2xl overflow-hidden transition transform hover:scale-[1.015] duration-300">
+    <div class="space-y-6 px-6 pt-6">
+        {% for cam in page.camera.all %}
+        <div class="text-center">
+            <img src="{{ cam.video.url }}" alt="{{ cam.title }}"
+                 class="w-full h-56 object-cover rounded-xl border dark:border-gray-700 shadow-sm">
+            <h3 class="mt-3 text-xl font-semibold">{{ cam.title }}</h3>
+            {% if page.free > 0 %}
+            <button onclick="reserve(this)" data-page="{{ page.id }}" data-camera="{{ cam.id }}"
+                    class="mt-3 inline-block px-4 py-2 text-sm bg-green-600 text-white font-medium rounded-full hover:bg-green-700 transition">
+                Rezerve et
+            </button>
+            {% else %}
+            <p class="mt-3 text-sm text-red-500 font-medium">No free spots left</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    <div class="mt-6 bg-gray-50 dark:bg-gray-700 px-6 py-4 text-center border-t dark:border-gray-600 text-lg font-medium rounded-b-2xl">
+        <p class="text-green-600">🟢 Free: <span id="free-{{ page.id }}">{{ page.free }}</span></p>
+        <p class="text-red-600">🔴 Full: {{ page.full }}</p>
+        <p class="text-yellow-500">🟡 Reserved: <span id="rez-{{ page.id }}">{{ page.rezervation }}</span></p>
+    </div>
+</div>
