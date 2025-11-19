@@ -10,5 +10,6 @@ admin.site.register(Camera)
 
 
 admin.site.register(Page)
+admin.site.register(Reservation)
 
 

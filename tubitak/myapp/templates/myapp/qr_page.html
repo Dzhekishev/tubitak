@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Your QR Reservation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen flex items-center justify-center text-gray-800 dark:text-gray-100">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg text-center">
+    <h1 class="text-2xl font-bold mb-4 text-green-600 dark:text-green-400">🎫 Your Reservation QR</h1>
+    <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">Use this code to verify your booking</p>
+    <img id="qr-img" src="data:image/png;base64,{{ img_data }}" alt="QR Code" class="mx-auto w-56 h-56 mb-4 border rounded-lg">
+    <p class="text-xs text-gray-400">{{ data }}</p>
+    <button onclick="downloadQR()" class="mt-4 px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition">
+      ⬇ Download PNG
+    </button>
+    <div class="mt-6">
+      <a href="{% url 'page_list' %}" class="text-sm text-gray-500 hover:underline">← Back</a>
+    </div>
+  </div>
+
+  <script>
+    function downloadQR() {
+      const qrImage = document.getElementById('qr-img');
+      const link = document.createElement('a');
+      link.href = qrImage.src;
+      link.download = 'reservation_qr.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
