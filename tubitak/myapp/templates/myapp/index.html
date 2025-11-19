@@ -4,56 +4,100 @@
     <meta charset="UTF-8">
     <title>Smart Parking System</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans leading-relaxed tracking-wide flex flex-col">
-    <header class="bg-white shadow-md py-6 px-8">
-        <h1 class="text-3xl font-bold text-blue-600">📷 Smart Parking & Camera Dashboard</h1>
-        <p class="text-gray-500 mt-1">Real-time overview of your parking lot and camera uploads</p>
-    </header>
+<body class="bg-gradient-to-br from-green-100 via-white to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
 
-    <main class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-        <!-- Camera Section -->
-        <section class="bg-white p-6 rounded-lg shadow">
-            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">🎥 Camera List</h2>
-            <ul class="space-y-4">
-                {% for camera in cameras %}
-                <li class="border-l-4 border-blue-500 pl-4">
-                    <p class="text-lg font-medium">{{ camera.title }}</p>
-                    <p class="text-sm text-gray-600">Uploaded: {{ camera.time }}</p>
-                    <a href="{{ camera.video.url }}" class="text-blue-600 hover:underline">Watch Video</a>
-                </li>
-                {% empty %}
-                <li class="text-gray-500">No cameras found.</li>
+<div class="flex justify-between items-center max-w-7xl mx-auto px-4 pt-6">
+    <button onclick="toggleTheme()" class="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-full shadow hover:scale-105 transition">
+        🌙 / ☀️ Theme
+    </button>
+    <div class="space-x-4">
+        <a href="{% url 'login' %}" class="px-4 py-2 bg-green-600 text-white rounded-full text-sm hover:bg-green-700 transition">Log in</a>
+        <a href="{% url 'register' %}" class="px-4 py-2 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition">Sign up</a>
+    </div>
+</div>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div class="text-center mb-10">
+        <a href="{% url 'index' %}" class="text-5xl font-extrabold text-green-700 dark:text-green-400 hover:underline transition">
+            🚗 Smart Parking
+        </a>
+        <p class="text-gray-500 dark:text-gray-400 mt-2">Browse live camera feeds and availability</p>
+    </div>
+
+    <form method="get" class="flex justify-center mb-12">
+        <input type="text" name="q" value="{{ query|default:'' }}" placeholder="🔍 Search camera by name..."
+               class="w-full max-w-md px-5 py-3 rounded-full border border-gray-300 dark:border-gray-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-400 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+    </form>
+
+    {% if pages_with_space %}
+    <h2 class="text-2xl font-semibold mb-4 text-green-600 dark:text-green-400">🟢 Available Parkings</h2>
+    <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-3 mb-16">
+        {% for page in pages_with_space %}
+        <div class="bg-white dark:bg-gray-800 shadow-xl rounded-2xl overflow-hidden transition transform hover:scale-[1.015] duration-300">
+            <div class="space-y-6 px-6 pt-6">
+                {% for cam in page.camera.all %}
+                <div class="text-center">
+                    <img src="{{ cam.video.url }}" alt="{{ cam.title }}" class="w-full h-56 object-cover rounded-xl border dark:border-gray-700 shadow-sm">
+                    <h3 class="mt-3 text-xl font-semibold">{{ cam.title }}</h3>
+                </div>
                 {% endfor %}
-            </ul>
-        </section>
+            </div>
+            <div class="mt-6 bg-gray-50 dark:bg-gray-700 px-6 py-4 text-center border-t dark:border-gray-600 text-lg font-medium rounded-b-2xl">
+                <p class="text-green-600">🟢 Free: {{ page.free }}</p>
+                <p class="text-red-600">🔴 Full: {{ page.full }}</p>
+                <p class="text-yellow-500">🟡 Reserved: {{ page.rezervation }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-        <!-- Page Section -->
-        <section class="bg-white p-6 rounded-lg shadow">
-            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">🚗 Parking Pages</h2>
-            <ul class="space-y-4">
-                {% for page in pages %}
-                <li class="border-l-4 border-green-500 pl-4">
-                    <p><strong>Cameras:</strong>
-                        {% for cam in page.camera.all %}
-                            <span class="inline-block bg-blue-100 text-blue-700 text-sm px-2 py-1 rounded-full mr-1">{{ cam.title }}</span>
-                        {% endfor %}
-                    </p>
-                    <p class="mt-1">
-                        <span class="text-green-600 font-semibold">Free:</span> {{ page.free }},
-                        <span class="text-red-600 font-semibold">Full:</span> {{ page.full }},
-                        <span class="text-yellow-600 font-semibold">Reserved:</span> {{ page.rezervation }}
-                    </p>
-                </li>
-                {% empty %}
-                <li class="text-gray-500">No parking pages found.</li>
+    {% if pages_full %}
+    <h2 class="text-2xl font-semibold mb-4 text-red-500 dark:text-red-400">🔴 Full Parkings</h2>
+    <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
+        {% for page in pages_full %}
+        <div class="bg-white dark:bg-gray-800 shadow-xl rounded-2xl overflow-hidden transition transform hover:scale-[1.015] duration-300">
+            <div class="space-y-6 px-6 pt-6">
+                {% for cam in page.camera.all %}
+                <div class="text-center">
+                    <img src="{{ cam.video.url }}" alt="{{ cam.title }}" class="w-full h-56 object-cover rounded-xl border dark:border-gray-700 shadow-sm">
+                    <h3 class="mt-3 text-xl font-semibold">{{ cam.title }}</h3>
+                </div>
                 {% endfor %}
-            </ul>
-        </section>
-    </main>
+            </div>
+            <div class="mt-6 bg-gray-50 dark:bg-gray-700 px-6 py-4 text-center border-t dark:border-gray-600 text-lg font-medium rounded-b-2xl">
+                <p class="text-green-600">🟢 Free: {{ page.free }}</p>
+                <p class="text-red-600">🔴 Full: {{ page.full }}</p>
+                <p class="text-yellow-500">🟡 Reserved: {{ page.rezervation }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
 
-    <footer class="bg-white text-center py-4 mt-auto text-sm text-gray-400">
-        &copy; 2025 SmartParking Inc. All rights reserved.
-    </footer>
+<script>
+    function toggleTheme() {
+        const html = document.documentElement;
+        if (html.classList.contains('dark')) {
+            html.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        } else {
+            html.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        }
+    }
+</script>
 </body>
 </html>

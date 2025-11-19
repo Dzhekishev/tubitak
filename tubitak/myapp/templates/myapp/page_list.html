@@ -5,9 +5,7 @@
     <title>Smart Parking System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-        }
+        tailwind.config = { darkMode: 'class' }
     </script>
     <script>
         if (localStorage.getItem('theme') === 'dark') {
@@ -15,139 +13,158 @@
         }
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
+    <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
 <body class="bg-gradient-to-br from-green-100 via-white to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
 
-    <div class="flex justify-end max-w-7xl mx-auto px-4 pt-6">
-        <button onclick="toggleTheme()" class="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-full shadow hover:scale-105 transition">
-            🌙 / ☀️ Theme
-        </button>
+<div class="flex justify-between items-center max-w-7xl mx-auto px-4 pt-6">
+    <button onclick="toggleTheme()" class="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-full shadow hover:scale-105 transition">
+        🌙 / ☀️ Theme
+    </button>
+    <a href="{% url 'logout' %}" class="px-4 py-2 bg-red-600 text-white rounded-full text-sm hover:bg-red-700 transition">
+        Log out
+    </a>
+</div>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div class="text-center mb-10">
+        <a href="{% url 'page_list' %}" class="text-5xl font-extrabold text-green-700 dark:text-green-400 hover:underline transition">
+            🚗 Smart Parking
+        </a>
+        <p class="text-gray-500 dark:text-gray-400 mt-2">Explore available parking spaces and live camera feeds</p>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <form method="get" class="flex justify-center mb-12">
+        <input type="text" name="q" value="{{ query|default:'' }}" placeholder="🔍 Search camera by name..."
+               class="w-full max-w-md px-5 py-3 rounded-full border border-gray-300 dark:border-gray-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-400 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+    </form>
 
-        <div class="text-center mb-10">
-            <a href="{% url 'page_list' %}" class="text-5xl font-extrabold text-green-700 dark:text-green-400 hover:underline transition">
-                🚗 Smart Parking
-            </a>
-            <p class="text-gray-500 dark:text-gray-400 mt-2">Explore available parking spaces and live camera feeds</p>
+    {% if pages_with_space %}
+    <h2 class="text-2xl font-semibold mb-4 text-green-600 dark:text-green-400">🟢 Available Parkings</h2>
+    <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-3 mb-16">
+        {% for page in pages_with_space %}
+        <div class="bg-white dark:bg-gray-800 shadow-xl rounded-2xl overflow-hidden transition transform hover:scale-[1.015] duration-300">
+            <div class="space-y-6 px-6 pt-6">
+                {% for cam in page.camera.all %}
+                <div class="text-center">
+                    <img src="{{ cam.video.url }}" alt="{{ cam.title }}" class="w-full h-56 object-cover rounded-xl border dark:border-gray-700 shadow-sm">
+                    <h3 class="mt-3 text-xl font-semibold">{{ cam.title }}</h3>
+
+                    {% if page.free > 0 %}
+                    <form onsubmit="return reserveTime(this);" class="mt-4 bg-gray-100 dark:bg-gray-700 p-4 rounded-xl shadow space-y-2">
+                        <input type="hidden" name="page_id" value="{{ page.id }}">
+                        <input type="hidden" name="camera_id" value="{{ cam.id }}">
+
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Start time</label>
+                        <input type="datetime-local" name="start_time" required
+                               class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm">
+
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">End time</label>
+                        <input type="datetime-local" name="end_time" required
+                               class="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm">
+
+                        <button type="submit"
+                                class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full text-sm transition">
+                            Reserve
+                        </button>
+                    </form>
+                    {% else %}
+                    <p class="mt-3 text-sm text-red-500 font-medium">No free spots left</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="mt-6 bg-gray-50 dark:bg-gray-700 px-6 py-4 text-center border-t dark:border-gray-600 text-lg font-medium rounded-b-2xl">
+                <p class="text-green-600">🟢 Free: {{ page.free }}</p>
+                <p class="text-red-600">🔴 Full: {{ page.full }}</p>
+                <p class="text-yellow-500">🟡 Reserved: {{ page.rezervation }}</p>
+            </div>
         </div>
-
-        <form method="get" class="flex justify-center mb-12">
-            <input type="text" name="q" value="{{ query|default:'' }}"
-                   placeholder="🔍 Search camera by name..."
-                   class="w-full max-w-md px-5 py-3 rounded-full border border-gray-300 dark:border-gray-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-400 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
-        </form>
-
-        {% if pages_with_space %}
-        <h2 class="text-2xl font-semibold mb-4 text-green-600 dark:text-green-400">🟢 Available Parkings</h2>
-        <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-3 mb-16">
-            {% for page in pages_with_space %}
-                {% include "myapp/parking_card.html" %}
-            {% endfor %}
-        </div>
-        {% else %}
-        <p class="text-gray-500 dark:text-gray-400 text-center mb-12">No available parking found.</p>
-        {% endif %}
-
-        {% if pages_full %}
-        <h2 class="text-2xl font-semibold mb-4 text-red-500 dark:text-red-400">🔴 Full Parkings</h2>
-        <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
-            {% for page in pages_full %}
-                {% include "myapp/parking_card.html" %}
-            {% endfor %}
-        </div>
-        {% else %}
-        <p class="text-gray-500 dark:text-gray-400 text-center">No full parkings found.</p>
-        {% endif %}
-
-        <div class="mt-12 text-center">
-            <a href="/" class="text-gray-500 dark:text-gray-400 text-sm hover:underline">← Back to Home</a>
-        </div>
+        {% endfor %}
     </div>
+    {% endif %}
 
-    <div id="toast" class="fixed bottom-6 right-6 bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg hidden z-50 transition-opacity duration-300"></div>
+    {% if pages_full %}
+    <h2 class="text-2xl font-semibold mb-4 text-red-500 dark:text-red-400">🔴 Full Parkings</h2>
+    <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
+        {% for page in pages_full %}
+            {% include "myapp/parking_card.html" %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
 
-    <script>
-        function toggleTheme() {
-            const html = document.documentElement;
-            if (html.classList.contains('dark')) {
-                html.classList.remove('dark');
-                localStorage.setItem('theme', 'light');
+<div id="toast" class="fixed bottom-6 right-6 bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg hidden z-50 transition-opacity duration-300"></div>
+
+<script>
+    function toggleTheme() {
+        const html = document.documentElement;
+        if (html.classList.contains('dark')) {
+            html.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        } else {
+            html.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        }
+    }
+
+    function reserveTime(form) {
+        const pageId = form.page_id.value;
+        const cameraId = form.camera_id.value;
+        const start = form.start_time.value;
+        const end = form.end_time.value;
+
+        fetch("{% url 'ajax_reserve_camera' %}", {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: `page_id=${pageId}&camera_id=${cameraId}&start_time=${start}&end_time=${end}`
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.redirect_url) {
+                showToast("Бронирование успешно ✅");
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 2000);
             } else {
-                html.classList.add('dark');
-                localStorage.setItem('theme', 'dark');
+                showToast(data.message || "Ошибка", true);
             }
-        }
+        });
 
-        function reserve(btn) {
-            const pageId = btn.dataset.page;
-            const cameraId = btn.dataset.camera;
+        return false;
+    }
 
-            fetch("{% url 'ajax_reserve_camera' %}", {
-                method: "POST",
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': getCookie('csrftoken'),
-                },
-                body: `page_id=${pageId}&camera_id=${cameraId}`
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const freeSpan = document.getElementById(`free-${pageId}`);
-                    const rezSpan = document.getElementById(`rez-${pageId}`);
-                    if (freeSpan && rezSpan) {
-                        freeSpan.textContent = data.free;
-                        rezSpan.textContent = data.rezervation;
-                    }
-
-                    if (data.free === 0) {
-                        btn.remove();
-                        const noFree = document.createElement('p');
-                        noFree.textContent = "No free spots left";
-                        noFree.className = "mt-3 text-sm text-red-500 font-medium";
-                        btn.closest('.text-center').appendChild(noFree);
-                    }
-
-                    showToast("Бронирование успешно ✅");
-                } else {
-                    showToast(data.message || "Ошибка", true);
-                }
-            });
-        }
-
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
                 }
             }
-            return cookieValue;
         }
+        return cookieValue;
+    }
 
-        function showToast(message, error = false) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = `fixed bottom-6 right-6 px-5 py-3 rounded-lg shadow-lg z-50 ${
-                error ? 'bg-red-600' : 'bg-green-600'
-            } text-white`;
-            toast.style.opacity = '1';
-            toast.style.display = 'block';
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.style.display = 'none', 300);
-            }, 3000);
-        }
-    </script>
+    function showToast(message, error = false) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = `fixed bottom-6 right-6 px-5 py-3 rounded-lg shadow-lg z-50 ${
+            error ? 'bg-red-600' : 'bg-green-600'
+        } text-white`;
+        toast.style.opacity = '1';
+        toast.style.display = 'block';
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.style.display = 'none', 300);
+        }, 3000);
+    }
+</script>
 </body>
 </html>

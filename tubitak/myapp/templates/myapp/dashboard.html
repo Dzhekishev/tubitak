@@ -14,13 +14,48 @@
     <div class="max-w-6xl mx-auto px-4 py-8">
         <div class="flex justify-between items-center mb-8">
             <h1 class="text-4xl font-bold text-green-600 dark:text-green-400">🚀 Admin Dashboard</h1>
-            <a href="{% url 'logout' %}" class="px-4 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition">Logout</a>
+            <a href="{% url 'admin_logout' %}" class="px-4 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition">Logout</a>
         </div>
 
         <!-- Chart Section -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
             <h2 class="text-xl font-semibold mb-4 text-center">📊 Parking Load Overview</h2>
             <canvas id="parkingChart" class="w-full" height="120"></canvas>
+        </div>
+
+        <!-- Reservation List Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-center">📅 Reservation Records</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left border border-gray-300 dark:border-gray-700">
+                    <thead class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                        <tr>
+                            <th class="px-4 py-2">User</th>
+                            <th class="px-4 py-2">Camera</th>
+                            <th class="px-4 py-2">Page</th>
+                            <th class="px-4 py-2">Start Time</th>
+                            <th class="px-4 py-2">End Time</th>
+                            <th class="px-4 py-2">Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for res in reservations %}
+                        <tr class="border-t border-gray-300 dark:border-gray-700">
+                            <td class="px-4 py-2">{{ res.user.username }}</td>
+                            <td class="px-4 py-2">{{ res.camera.title }}</td>
+                            <td class="px-4 py-2">{{ res.page.name }}</td>
+                            <td class="px-4 py-2">{{ res.start_time|date:"Y-m-d H:i" }}</td>
+                            <td class="px-4 py-2">{{ res.end_time|date:"Y-m-d H:i" }}</td>
+                            <td class="px-4 py-2">{{ res.created_at|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-gray-500 px-4 py-2">No reservations found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- Search and Sort Form -->
