@@ -1,1 +1,1 @@
-web: gunicorn tubitak.wsgi --log-file -
+web: gunicorn tubitak.wsgi:application

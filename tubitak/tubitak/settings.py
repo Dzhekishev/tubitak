@@ -76,7 +76,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'tubitak.wsgi'
+WSGI_APPLICATION = 'tubitak.wsgi.application'
 
 
 # Database
