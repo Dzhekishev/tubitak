@@ -63,7 +63,7 @@ ROOT_URLCONF = 'tubitak.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'myapp' / 'templates'/'myapp'],
+        'DIRS': [BASE_DIR / 'tubitak'/ 'myapp' / 'templates'/'myapp'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
