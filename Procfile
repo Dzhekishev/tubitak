@@ -1,1 +1,1 @@
-web: gunicorn tubitak.wsgi:application
+web: gunicorn tubitak.tubitak.wsgi:application
